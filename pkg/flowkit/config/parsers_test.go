@@ -48,12 +48,13 @@ func TestStringToDeployments(t *testing.T) {
 			deployment := config.StringToDeployment(c.network, c.account, c.contracts)
 			assert.Equal(t, c.account, deployment.Account)
 			assert.Equal(t, c.network, deployment.Network)
-			// check contract names are what we expect
+			// check contract names match without duplicates
 			assert.ElementsMatch(t, noDupes(c.contracts), namesOf(deployment.Contracts))
 		})
 	}
 }
 
+// noDupes removes duplicate strings
 func noDupes(names []string) []string {
 	found := map[string]bool{}
 	unique := []string{}
@@ -67,6 +68,7 @@ func noDupes(names []string) []string {
 	return unique
 }
 
+// namesOf returns the names of supplied contracts
 func namesOf(contracts []config.ContractDeployment) []string {
 	names := make([]string, len(contracts))
 	for i, contract := range contracts {

@@ -30,19 +30,47 @@ func TestStringToDeployments(t *testing.T) {
 		name, network, account string
 		contracts              []string
 	}{
-		{"TestEmulator", "emulator", "emulator-account", []string{"HelloWorld"}},
+		{
+			name:      "TestBasic",
+			network:   "emulator",
+			account:   "emulator-account",
+			contracts: []string{"HelloWorld"},
+		},
+		{
+			name:      "TestNoDuplicates",
+			network:   "emulator",
+			account:   "emulator-account",
+			contracts: []string{"HelloWorld", "HelloWorld", "FlowServiceAccount"},
+		},
 	}
 	for _, c := range testCases {
 		t.Run(c.name, func(t *testing.T) {
-			d := config.StringToDeployment(c.network, c.account, c.contracts)
-			assert.Equal(t, c.account, d.Account)
-			assert.Equal(t, c.network, d.Network)
-			deploymentContractNames := make([]string, len(d.Contracts))
-			for i, contract := range d.Contracts {
-				deploymentContractNames[i] = contract.Name
-			}
-			assert.ElementsMatch(t, c.contracts, deploymentContractNames)
+			deployment := config.StringToDeployment(c.network, c.account, c.contracts)
+			assert.Equal(t, c.account, deployment.Account)
+			assert.Equal(t, c.network, deployment.Network)
+			// check contract names are what we expect
+			assert.ElementsMatch(t, noDupes(c.contracts), namesOf(deployment.Contracts))
 		})
 	}
+}
 
+func noDupes(names []string) []string {
+	found := map[string]bool{}
+	unique := []string{}
+	for _, name := range names {
+		_, has := found[name]
+		if !has {
+			found[name] = true
+			unique = append(unique, name)
+		}
+	}
+	return unique
+}
+
+func namesOf(contracts []config.ContractDeployment) []string {
+	names := make([]string, len(contracts))
+	for i, contract := range contracts {
+		names[i] = contract.Name
+	}
+	return names
 }

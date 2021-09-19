@@ -21,8 +21,9 @@ package config_test
 import (
 	"testing"
 
-	"github.com/onflow/flow-cli/pkg/flowkit/config"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/onflow/flow-cli/pkg/flowkit/config"
 )
 
 func TestStringToDeployments(t *testing.T) {

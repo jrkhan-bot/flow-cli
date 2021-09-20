@@ -22,8 +22,9 @@ import (
 	"regexp"
 	"testing"
 
-	"github.com/onflow/flow-cli/tests/integration"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/onflow/flow-cli/tests/integration"
 )
 
 var addressRegex = regexp.MustCompile("Address\\s+(?P<address>0x[^\n]+)")

@@ -2,11 +2,11 @@ package integration
 
 import (
 	"bufio"
+	"fmt"
 	"io"
 	"os"
 	"os/exec"
 	"runtime"
-	"testing"
 	"time"
 )
 
@@ -18,8 +18,8 @@ type EmulatorProcess struct {
 }
 
 // RunEmulator starts up the emulator in a separate process
-func RunEmulator(t *testing.T) (*EmulatorProcess, error) {
-	cmd := MakeFlowCmd(t, "emulator")
+func RunEmulator() (*EmulatorProcess, error) {
+	cmd := MakeFlowCmd("emulator")
 	out, err := cmd.StdoutPipe()
 	if err != nil {
 		return nil, err
@@ -29,11 +29,11 @@ func RunEmulator(t *testing.T) (*EmulatorProcess, error) {
 		return nil, err
 	}
 	emu := &EmulatorProcess{cmd}
-	emu.JoinOut(t, out)
+	emu.JoinOut(out)
 	return emu, nil
 }
 
-func (e *EmulatorProcess) Stop(t *testing.T) error {
+func (e *EmulatorProcess) Stop() error {
 	sig := os.Interrupt
 	isWindows := runtime.GOOS == "windows"
 	if isWindows {
@@ -41,27 +41,27 @@ func (e *EmulatorProcess) Stop(t *testing.T) error {
 		sig = os.Kill
 	}
 
-	t.Logf("send %v to process %v", sig, e.cmd.Process.Pid)
+	fmt.Printf("send %v to process %v", sig, e.cmd.Process.Pid)
 	err := e.cmd.Process.Signal(sig)
 	if err != nil {
-		t.Logf("unable to terminate process with error %v", err)
+		fmt.Printf("unable to terminate process with error %v\n", err)
 	}
 	_, err = e.cmd.Process.Wait()
 	if isWindows {
 		// windows needs to clean up children
-		e.StopChildrenWindows(t)
+		e.StopChildrenWindows()
 	}
 	return err
 }
 
-func (e *EmulatorProcess) JoinOut(t *testing.T, out io.ReadCloser) {
+func (e *EmulatorProcess) JoinOut(out io.ReadCloser) {
 	outbr := bufio.NewReader(out)
 	go func() {
 		for {
 			line, _ := outbr.ReadString('\n')
 
 			if len(line) > 0 {
-				t.Log(line)
+				fmt.Print(line)
 			}
 
 			time.Sleep(100 * time.Millisecond)
@@ -69,11 +69,11 @@ func (e *EmulatorProcess) JoinOut(t *testing.T, out io.ReadCloser) {
 	}()
 }
 
-func (e *EmulatorProcess) StopChildrenWindows(t *testing.T) {
+func (e *EmulatorProcess) StopChildrenWindows() {
 	// stop the child emulator process we missed by just killing the parent
 	out, err := exec.Command("powershell.exe", "Get-Process", EmulatorProcessName, "|", "Stop-Process").Output()
-	t.Log(out)
+	fmt.Print(out)
 	if err != nil {
-		t.Log(err)
+		fmt.Print(err)
 	}
 }

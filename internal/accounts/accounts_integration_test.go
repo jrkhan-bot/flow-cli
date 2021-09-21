@@ -19,6 +19,8 @@
 package accounts_test
 
 import (
+	"fmt"
+	"os"
 	"regexp"
 	"testing"
 
@@ -29,12 +31,26 @@ import (
 
 var addressRegex = regexp.MustCompile("Address\\s+(?P<address>0x[^\n]+)")
 
-func TestAccountCreateCommand(t *testing.T) {
-	emu, err := integration.RunEmulator(t)
+func init() {
+	// bootstrap configuration if it doesn't exist
+	_, _ = integration.RunFlowCmd("init")
+}
+
+func TestMain(m *testing.M) {
+	emu, err := integration.RunEmulator()
+	code := m.Run()
 	if err != nil {
-		t.Fatalf("unable to start emulator %v", err)
+		panic(fmt.Sprintf("unable to start emulator %v", err))
 	}
-	out, err := integration.RunFlowCmd(t, "accounts", "create")
+	err = emu.Stop() // 🛑 the emulator
+	if err != nil {
+		fmt.Printf("unable to stop emulator: %v\n", err)
+	}
+	os.Exit(code)
+}
+
+func TestAccountCreateCommand(t *testing.T) {
+	out, err := integration.RunFlowCmd("accounts", "create")
 	if err != nil {
 		t.Logf("unable to create account: %v", err)
 		t.Fail()
@@ -47,7 +63,7 @@ func TestAccountCreateCommand(t *testing.T) {
 	t.Logf("address: %s", id)
 
 	// now confirm the address was added
-	out, err = integration.RunFlowCmd(t, "accounts", "get", id)
+	out, err = integration.RunFlowCmd("accounts", "get", id)
 	assert.NoError(t, err)
 	result := string(out)
 	t.Log(result)
@@ -56,12 +72,6 @@ func TestAccountCreateCommand(t *testing.T) {
 	assert.Contains(t, result, "Balance")
 	assert.Contains(t, result, "Keys")
 	assert.Contains(t, result, "Contracts")
-
-	err = emu.Stop(t) // 🛑 the emulator
-	if err != nil {
-		t.Logf("unable to stop emulator: %v", err)
-		t.Fail()
-	}
 }
 
 func getAccountIdFromCreate(createOutput []byte) string {

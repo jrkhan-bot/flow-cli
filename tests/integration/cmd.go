@@ -1,10 +1,10 @@
 package integration
 
 import (
+	"fmt"
 	"os/exec"
 	"path/filepath"
 	"runtime"
-	"testing"
 )
 
 var (
@@ -13,13 +13,13 @@ var (
 	FlowCmd       = "./cmd/flow"
 )
 
-func RunFlowCmd(t *testing.T, args ...string) ([]byte, error) {
+func RunFlowCmd(args ...string) ([]byte, error) {
 	// integration testing by way of external process execution
-	cmd := MakeFlowCmd(t, args...)
+	cmd := MakeFlowCmd(args...)
 	return cmd.Output()
 }
 
-func MakeFlowCmd(t *testing.T, args ...string) *exec.Cmd {
+func MakeFlowCmd(args ...string) *exec.Cmd {
 	finalArgs := make([]string, 2+len(args))
 	finalArgs[0] = "run"
 	finalArgs[1] = FlowCmd
@@ -28,6 +28,6 @@ func MakeFlowCmd(t *testing.T, args ...string) *exec.Cmd {
 	}
 	cmd := exec.Command("go", finalArgs...)
 	cmd.Dir = ModuleRoot
-	t.Log(cmd.String())
+	fmt.Print(cmd.String())
 	return cmd
 }

@@ -33,7 +33,7 @@ var addressRegex = regexp.MustCompile("Address\\s+(?P<address>0x[^\n]+)")
 
 func init() {
 	// bootstrap configuration if it doesn't exist
-	_, _ = integration.RunFlowCmd("init")
+	_, _ = integration.RunFlowCmd("init", "--yes")
 }
 
 func TestMain(m *testing.M) {

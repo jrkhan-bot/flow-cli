@@ -65,11 +65,10 @@ func TestAccountCreateCommand(t *testing.T) {
 	done := make(chan struct{})
 	go func() {
 		out, err := integration.RunFlowCmd("accounts", "create")
-		if err != nil {
-			t.Logf("unable to create account: %v", err)
-			t.Fail()
-		}
-		id := getAccountIdFromCreate(out)
+		assert.NoErrorf(t, err, "unable to create account: %v", err)
+
+		id, err := getAccountIdFromCreate(out)
+		assert.NoError(t, err)
 		if id == "" {
 			t.Logf("unable to resolve address from output %s", string(out))
 			t.Fail()
@@ -96,9 +95,12 @@ func TestAccountCreateCommand(t *testing.T) {
 	}
 }
 
-func getAccountIdFromCreate(createOutput []byte) string {
+func getAccountIdFromCreate(createOutput []byte) (string, error) {
 	addressIndex := addressRegex.SubexpIndex("address")
-	matches := addressRegex.FindSubmatch(createOutput)
 
-	return string(matches[addressIndex])
+	matches := addressRegex.FindSubmatch(createOutput)
+	if len(matches) < addressIndex {
+		return "", fmt.Errorf("address not found in output: %v", string(createOutput))
+	}
+	return string(matches[addressIndex]), nil
 }

@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"os"
 	"regexp"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -33,16 +34,25 @@ var addressRegex = regexp.MustCompile("Address\\s+(?P<address>0x[^\n]+)")
 
 func init() {
 	// bootstrap configuration if it doesn't exist
-	_, _ = integration.RunFlowCmd("init", "--yes")
+	out, err := integration.RunFlowCmd("init")
+	// print any command output
+	if len(out) > 0 {
+		fmt.Println(string(out))
+	}
+	// print any error outside of config already existing
+	if err != nil && !strings.Contains(err.Error(), "configuration already exists") {
+		fmt.Println(err)
+	}
 }
 
+// TestMain starts and stops the emulator after each test
 func TestMain(m *testing.M) {
 	emu, err := integration.RunEmulator()
 	code := m.Run()
 	if err != nil {
 		panic(fmt.Sprintf("unable to start emulator %v", err))
 	}
-	err = emu.Stop() // 🛑 the emulator
+	err = emu.Stop()
 	if err != nil {
 		fmt.Printf("unable to stop emulator: %v\n", err)
 	}
@@ -72,6 +82,7 @@ func TestAccountCreateCommand(t *testing.T) {
 	assert.Contains(t, result, "Balance")
 	assert.Contains(t, result, "Keys")
 	assert.Contains(t, result, "Contracts")
+	t.Fail()
 }
 
 func getAccountIdFromCreate(createOutput []byte) string {

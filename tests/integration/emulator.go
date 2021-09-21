@@ -24,6 +24,7 @@ func RunEmulator() (*EmulatorProcess, error) {
 	if err != nil {
 		return nil, err
 	}
+	fmt.Println("🌱  Starting emulator")
 	err = cmd.Start()
 	if err != nil {
 		return nil, err
@@ -41,11 +42,12 @@ func (e *EmulatorProcess) Stop() error {
 		sig = os.Kill
 	}
 
-	fmt.Printf("send %v to process %v", sig, e.cmd.Process.Pid)
+	fmt.Printf("send %v to process %v\n", sig, e.cmd.Process.Pid)
 	err := e.cmd.Process.Signal(sig)
 	if err != nil {
 		fmt.Printf("unable to terminate process with error %v\n", err)
 	}
+	fmt.Println("🛑  Stopping emulator")
 	_, err = e.cmd.Process.Wait()
 	if isWindows {
 		// windows needs to clean up children

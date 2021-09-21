@@ -1,6 +1,7 @@
 package integration
 
 import (
+	"errors"
 	"fmt"
 	"os/exec"
 	"path/filepath"
@@ -15,8 +16,18 @@ var (
 
 func RunFlowCmd(args ...string) ([]byte, error) {
 	// integration testing by way of external process execution
+
 	cmd := MakeFlowCmd(args...)
-	return cmd.Output()
+	fmt.Println("Running command: " + cmd.String())
+	out, err := cmd.Output()
+
+	if err != nil {
+		exitErr := &exec.ExitError{}
+		if errors.As(err, &exitErr) {
+			err = fmt.Errorf("%w with stderr: %v", err, string(exitErr.Stderr))
+		}
+	}
+	return out, err
 }
 
 func MakeFlowCmd(args ...string) *exec.Cmd {
@@ -28,6 +39,6 @@ func MakeFlowCmd(args ...string) *exec.Cmd {
 	}
 	cmd := exec.Command("go", finalArgs...)
 	cmd.Dir = ModuleRoot
-	fmt.Print(cmd.String())
+
 	return cmd
 }

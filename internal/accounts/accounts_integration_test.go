@@ -24,6 +24,7 @@ import (
 	"regexp"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 
@@ -60,29 +61,39 @@ func TestMain(m *testing.M) {
 }
 
 func TestAccountCreateCommand(t *testing.T) {
-	out, err := integration.RunFlowCmd("accounts", "create")
-	if err != nil {
-		t.Logf("unable to create account: %v", err)
-		t.Fail()
-	}
-	id := getAccountIdFromCreate(out)
-	if id == "" {
-		t.Logf("unable to resolve address from output %s", string(out))
-		t.Fail()
-	}
-	t.Logf("address: %s", id)
+	individualTimeout := time.After(20 * time.Second)
+	done := make(chan struct{})
+	go func() {
+		out, err := integration.RunFlowCmd("accounts", "create")
+		if err != nil {
+			t.Logf("unable to create account: %v", err)
+			t.Fail()
+		}
+		id := getAccountIdFromCreate(out)
+		if id == "" {
+			t.Logf("unable to resolve address from output %s", string(out))
+			t.Fail()
+		}
+		t.Logf("address: %s", id)
 
-	// now confirm the address was added
-	out, err = integration.RunFlowCmd("accounts", "get", id)
-	assert.NoError(t, err)
-	result := string(out)
-	t.Log(result)
-	// expect the response contains Address, Balance, Keys, and Contracts
-	assert.Contains(t, result, "Address")
-	assert.Contains(t, result, "Balance")
-	assert.Contains(t, result, "Keys")
-	assert.Contains(t, result, "Contracts")
-	t.Fail()
+		// now confirm the address was added
+		out, err = integration.RunFlowCmd("accounts", "get", id)
+		assert.NoError(t, err)
+		result := string(out)
+		t.Log(result)
+		// expect the response contains Address, Balance, Keys, and Contracts
+		assert.Contains(t, result, "Address")
+		assert.Contains(t, result, "Balance")
+		assert.Contains(t, result, "Keys")
+		assert.Contains(t, result, "Contracts")
+		close(done)
+	}()
+
+	select {
+	case <-individualTimeout:
+		t.Error("test timed out")
+	case <-done:
+	}
 }
 
 func getAccountIdFromCreate(createOutput []byte) string {

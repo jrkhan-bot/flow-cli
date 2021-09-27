@@ -37,6 +37,8 @@ var (
 	ConfigFile    = "test_config.json"
 )
 
+// ExecuteCommand synchronously executes the supplied cobra command with the supplied args
+// it returns the result, as well as any messages written to Stdout/Stderr
 func ExecuteCommand(root *cobra.Command, args ...string) (result []byte, stdOut string, stdErr string, err error) {
 	// create a temp file to capture outout
 	cmdName := root.Name()
@@ -65,8 +67,9 @@ func configArgs() []string {
 	return []string{"-f", filepath.Join(ConfigPath, ConfigFile)}
 }
 
+// ConnectCommand supplies buffers to use for the to the command's Stdout/Stderr, and sets the args for its execution
 func ConnectCommand(root *cobra.Command, args ...string) (c *cobra.Command, outBuffer, errBuffer *bytes.Buffer) {
-	// since we write directly to os.StdOut in command.outputResult setting this does contain the 'response'
+	// since we write directly to os.StdOut in command.outputResult setting this does not actually contain the 'response'
 	outBuffer = new(bytes.Buffer)
 	errBuffer = new(bytes.Buffer)
 	root.SetOut(outBuffer)

@@ -13,9 +13,10 @@ import (
 
 var (
 	_, file, _, _ = runtime.Caller(0)
-	ConfigPath    = filepath.Dir(file)
+	ConfigPath    = filepath.Join(filepath.Dir(file), "testdata")
 	ModuleRoot    = filepath.Join(filepath.Dir(file), "../..")
 	FlowCmd       = "./cmd/flow"
+	ConfigFile    = "test_config.json"
 )
 
 func ExecuteCommand(root *cobra.Command, args ...string) (result []byte, stdOut string, stdErr string, err error) {
@@ -43,7 +44,7 @@ func ExecuteCommand(root *cobra.Command, args ...string) (result []byte, stdOut 
 }
 
 func configArgs() []string {
-	return []string{"-f", filepath.Join(ConfigPath, "flow.json")}
+	return []string{"-f", filepath.Join(ConfigPath, ConfigFile)}
 }
 
 func ConnectCommand(root *cobra.Command, args ...string) (c *cobra.Command, outBuffer, errBuffer *bytes.Buffer) {

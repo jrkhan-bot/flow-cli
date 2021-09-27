@@ -60,7 +60,12 @@ func RunEmulator() error {
 
 // checkPort checks if a port is free
 func portInUse(port string) bool {
-	_, err := net.Listen("tcp", testPort)
+	listener, err := net.Listen("tcp", testPort)
 	// if there is an error, we assume the port is in use
-	return err != nil
+	if err != nil {
+		return true
+	}
+	// make sure we don't block the port ourselves
+	listener.Close()
+	return false
 }

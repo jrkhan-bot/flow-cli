@@ -1,44 +1,75 @@
 package integration
 
 import (
-	"errors"
+	"bytes"
 	"fmt"
-	"os/exec"
+	"io/ioutil"
+	"os"
 	"path/filepath"
 	"runtime"
+
+	"github.com/spf13/cobra"
 )
 
 var (
 	_, file, _, _ = runtime.Caller(0)
+	ConfigPath    = filepath.Dir(file)
 	ModuleRoot    = filepath.Join(filepath.Dir(file), "../..")
 	FlowCmd       = "./cmd/flow"
 )
 
-func RunFlowCmd(args ...string) ([]byte, error) {
-	// integration testing by way of external process execution
-
-	cmd := MakeFlowCmd(args...)
-	fmt.Println("Running command: " + cmd.String())
-	out, err := cmd.Output()
-
+func ExecuteCommand(root *cobra.Command, args ...string) (result []byte, stdOut string, stdErr string, err error) {
+	// create a temp file to capture outout
+	cmdName := root.Name()
+	file, err := tmpFile(cmdName)
 	if err != nil {
-		exitErr := &exec.ExitError{}
-		if errors.As(err, &exitErr) {
-			err = fmt.Errorf("%w with stderr: %v", err, string(exitErr.Stderr))
-		}
+		return
 	}
-	return out, err
+	defer func() {
+		file.Close()
+		os.Remove(file.Name())
+	}()
+	args = append(args, configArgs()...)
+	args = append(args, "-s", file.Name())
+	command, outBuffer, errBuffer := ConnectCommand(root, args...)
+	fmt.Printf("👟 Running command with args: %v\n", args)
+	_, err = command.ExecuteC()
+	if err != nil {
+		return
+	}
+	out, err := ioutil.ReadAll(file)
+
+	return out, outBuffer.String(), errBuffer.String(), err
 }
 
-func MakeFlowCmd(args ...string) *exec.Cmd {
-	finalArgs := make([]string, 2+len(args))
-	finalArgs[0] = "run"
-	finalArgs[1] = FlowCmd
-	for i, arg := range args {
-		finalArgs[i+2] = arg
-	}
-	cmd := exec.Command("go", finalArgs...)
-	cmd.Dir = ModuleRoot
+func configArgs() []string {
+	return []string{"-f", filepath.Join(ConfigPath, "flow.json")}
+}
 
-	return cmd
+func ConnectCommand(root *cobra.Command, args ...string) (c *cobra.Command, outBuffer, errBuffer *bytes.Buffer) {
+	// since we write directly to os.StdOut in command.outputResult setting this does contain the 'response'
+	outBuffer = new(bytes.Buffer)
+	errBuffer = new(bytes.Buffer)
+	root.SetOut(outBuffer)
+	root.SetErr(errBuffer)
+	root.SetArgs(args)
+	return root, outBuffer, errBuffer
+}
+
+// ExecuteAsync executes a command and returns immediately, allowing us to examine output buffers
+func ExecuteAsync(root *cobra.Command, args ...string) (outBuffer, errBuffer *bytes.Buffer, err error) {
+	args = append(args, configArgs()...)
+	var cmd *cobra.Command
+	cmd, outBuffer, errBuffer = ConnectCommand(root, args...)
+	go func() {
+		_, err := cmd.ExecuteC()
+		if err != nil {
+			panic(err)
+		}
+	}()
+	return
+}
+
+func tmpFile(command string) (*os.File, error) {
+	return ioutil.TempFile("", command)
 }

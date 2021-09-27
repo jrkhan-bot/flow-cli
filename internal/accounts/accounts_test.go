@@ -21,7 +21,6 @@ package accounts_test
 import (
 	"encoding/json"
 	"fmt"
-	"os"
 	"regexp"
 	"testing"
 
@@ -30,18 +29,20 @@ import (
 
 	"github.com/onflow/flow-cli/internal/accounts"
 	"github.com/onflow/flow-cli/internal/command"
+	"github.com/onflow/flow-cli/internal/emulator"
 	"github.com/onflow/flow-cli/tests/integration"
 )
 
 var addressRegex = regexp.MustCompile("Address\\s+(?P<address>0x[^\n]+)")
 
-// TestMain starts and stops the emulator after each test
+// TestMain starts and stops the emulator before/after each test
 func TestMain(m *testing.M) {
 	err := integration.RunEmulator()
 	if err != nil {
 		panic("unable to start emulator")
 	}
-	os.Exit(m.Run())
+	code := m.Run()
+	emulator.Exitf(code, "test complete")
 }
 
 // TestCobraCommand integration test executes the Cobra command in the same process as the test

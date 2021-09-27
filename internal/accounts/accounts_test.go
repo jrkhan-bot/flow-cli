@@ -21,6 +21,7 @@ package accounts_test
 import (
 	"encoding/json"
 	"fmt"
+	"os"
 	"regexp"
 	"testing"
 
@@ -29,7 +30,6 @@ import (
 
 	"github.com/onflow/flow-cli/internal/accounts"
 	"github.com/onflow/flow-cli/internal/command"
-	"github.com/onflow/flow-cli/internal/emulator"
 	"github.com/onflow/flow-cli/tests/integration"
 )
 
@@ -42,7 +42,8 @@ func TestMain(m *testing.M) {
 		panic("unable to start emulator")
 	}
 	code := m.Run()
-	emulator.Exitf(code, "test complete")
+	// as emulator is running in the current process, this also stops the emulator
+	os.Exit(code)
 }
 
 // TestCobraCommand integration test executes the Cobra command in the same process as the test

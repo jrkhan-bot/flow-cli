@@ -1,14 +1,18 @@
 package integration
 
 import (
-	"bufio"
 	"fmt"
-	"strings"
+	"net"
+	"time"
 
 	"github.com/spf13/cobra"
 
 	"github.com/onflow/flow-cli/internal/command"
 	"github.com/onflow/flow-cli/internal/emulator"
+)
+
+var (
+	testPort = ":3570"
 )
 
 // RunEmulator starts up the emulator in a separate process
@@ -20,18 +24,25 @@ func RunEmulator() error {
 	cmd.AddCommand(emulator.Cmd)
 	command.InitFlags(cmd)
 	fmt.Println("🌱  Starting emulator")
-	stdOut, _, err := ExecuteAsync(cmd, "emulator")
-
+	_, _, err := ExecuteAsync(cmd, "emulator")
 	if err != nil {
 		return err
 	}
-	// block until the gRPC server has actually started
-	scanner := bufio.NewScanner(stdOut)
-	for scanner.Scan() {
-		// for now, just scanning out for an expected message
-		if strings.Contains(scanner.Text(), "Starting gRPC server") {
-			break
+
+	// block until the gRPC server has actually started on the expected port
+	for {
+		// does a channel/event exist to let us know when the server has started?
+		// just checking to see if the port is in use for now
+		if portInUse(testPort) {
+			return nil
 		}
+		time.Sleep(time.Millisecond * 50)
 	}
-	return nil
+}
+
+// checkPort checks if a port is free
+func portInUse(port string) bool {
+	_, err := net.Listen("tcp", testPort)
+	// if there is an error, we assume the port is in use
+	return err != nil
 }

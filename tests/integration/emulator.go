@@ -30,7 +30,7 @@ import (
 )
 
 var (
-	testPort = ":3570"
+	testPort = ":3569"
 )
 
 // RunEmulator starts up the emulator in a separate process

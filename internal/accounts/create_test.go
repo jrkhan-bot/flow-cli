@@ -50,10 +50,9 @@ func TestAccountsCreate(t *testing.T) {
 	services, state, gw := setup()
 
 	newAddress := flow.HexToAddress("192440c99cb17282")
+	expectedAccount := tests.NewAccountWithAddress(newAddress.String())
 	gw.GetAccount.Run(func(args mock.Arguments) {
-		gw.GetAccount.Return(
-			tests.NewAccountWithAddress(newAddress.String()), nil,
-		)
+		gw.GetAccount.Return(expectedAccount, nil)
 	})
 
 	gw.GetTransactionResult.Return(
@@ -77,6 +76,8 @@ func TestAccountsCreate(t *testing.T) {
 
 	assert.NoError(t, err)
 
+	// confirm the account returned from create is the one returned from mock gateway
+	assert.Equal(t, expectedAccount, res.(*AccountResult).Account)
 	out := res.JSON()
 
 	// cycle json
